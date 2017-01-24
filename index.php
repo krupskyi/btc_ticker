@@ -3,9 +3,13 @@ error_reporting(0);
 $rates['EUR'] = [];
 $rates['USD'] = [];
 $sources['EUR'] = 1;
-$sources['USD'] = 1;
 
-$url = 'http://api.coindesk.com/v1/bpi/currentprice.json';
+$urls = array(
+	'BTC'=>array(
+		'http://api.coindesk.com/v1/bpi/currentprice.json',
+		'https://blockchain.info/ticker'
+	);
+);
 
 $options = array(
     'http' => array(
@@ -13,18 +17,23 @@ $options = array(
         'method'  => 'GET'
     )
 );
-
-$context  = stream_context_create($options);
-$result = file_get_contents($url, false, $context);
-if($result){
-	$rates['EUR'][] = json_decode($result)->bpi->EUR->rate;
-	$rates['USD'][] = json_decode($result)->bpi->USD->rate;	
+foreach($urls['BTC'] as $key=>$url){
+	$context  = stream_context_create($options);
+	$result = file_get_contents($url, false, $context);
+	if($result){
+		switch($key){
+			case 0: $rates['BTC'][] = json_decode($result)->bpi->USD->rate; break;
+			case 1: $rates['BTC'][] = json_decode($result)->USD->last; break;
+		}
+	}	
 }
-printf('BTC/USD: %s BTC/EUR: %s<br>',max($rates['USD']), max($rates['EUR']));
+
+printf('BTC/USD: %s BTC/EUR: %s<br>',max($rates['BTC']), max($rates['EUR']));
 printf('Active sources: BTC/USD (%s of %s)  BTC/EUR (%s of %s)', 
-	count($rates['USD']),
-	$sources['USD'],
+	count($rates['BTC']),
+	count($urls['BTC']),
 	count($rates['EUR']),
 	$sources['EUR'] 	
 );
+
 ?>
