@@ -8,7 +8,7 @@ $urls = array(
 	'BTC'=>array(
 		'http://api.coindesk.com/v1/bpi/currentprice.json',
 		'https://blockchain.info/ticker'
-	);
+	)
 );
 
 $options = array(
