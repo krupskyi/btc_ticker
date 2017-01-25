@@ -52,8 +52,8 @@ foreach($urls['USD'] as $key=>$url){
 //displaying results
 printf('BTC/USD: %.4f EUR/USD: %.4f BTC/EUR: %.4f<br>',
 	max($rates['BTC']),
-	max($rates['USD']),
-	max($rates['BTC'])/max($rates['USD'])	
+	min($rates['USD']),
+	max($rates['BTC'])/min($rates['USD'])	
 );
 printf('Active sources: BTC/USD (%s of %s)  BTC/EUR (%s of %s)', 
 	count($rates['BTC']), //successful BTC feeds responses
