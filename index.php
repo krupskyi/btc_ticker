@@ -1,13 +1,14 @@
 <?php
 error_reporting(0);
-$rates['EUR'] = [];
+$rates['BTC'] = [];
 $rates['USD'] = [];
-$sources['EUR'] = 1;
 
 $urls = array(
 	'BTC'=>array(
 		'http://api.coindesk.com/v1/bpi/currentprice.json',
 		'https://blockchain.info/ticker'
+	),
+	'USD'=>array(
 	)
 );
 
@@ -32,8 +33,8 @@ printf('BTC/USD: %s BTC/EUR: %s<br>',max($rates['BTC']), max($rates['EUR']));
 printf('Active sources: BTC/USD (%s of %s)  BTC/EUR (%s of %s)', 
 	count($rates['BTC']),
 	count($urls['BTC']),
-	count($rates['EUR']),
-	$sources['EUR'] 	
+	count($rates['USD']),
+	count($urls['USD'])	
 );
 
 ?>
