@@ -1,9 +1,9 @@
 <?php
 //environment
-define('APP_PATH','');
-echo base_url();
+define('APP_PATH',dirname(__FILE__));
 //includes
 require('lib/jsonpath-0.8.1.php');
+define('LOG_PATH','/log');
 require('lib/log.php');
 //sources
 $urls['BTC']=array(
