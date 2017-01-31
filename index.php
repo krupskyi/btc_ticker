@@ -5,83 +5,75 @@ require('config.php');
 error_reporting(0);
 
 //init data
-$urlsCount['BTC'] = count($urls['BTC']);
-$urlsCount['USD'] = count($urls['USD']);
-if($urlsCount['BTC'] == 0 || $urlsCount['USD'] == 0) {
-	$writeLog('Error','No source specified: '.json_encode($urlsCount));
-	die('no source');
-}
-
 $rates['BTC'] = [];
 $rates['USD'] = [];
+$curlArr = [];
+$curlNodes=['BTC'=>0,'USD'=>0];
+$master = curl_multi_init();
 
-//setup
-$options = array(
-    'http' => array(
-        'method'  => 'GET'
-    )
-);
-$context  = stream_context_create($options);
+//collecting nodes
+foreach($urls as $source) {    
+	$curlNodes[$source['type']]++;
+	$curlNode['url'] = $source['url'];
+	$curlNode['type'] = $source['type'];
+	$curlNode['jsonPath'] = $source['jsonPath'];
+    $curlNode['data'] = curl_init($source['url']);
+    curl_setopt($curlNode['data'], CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($curlNode['data'], CURLOPT_SSL_VERIFYPEER, false);
+	$curlArr[] = $curlNode;
+    curl_multi_add_handle($master, $curlNode['data']);
+}
 
-//processing BTC feeds
-foreach($urls['BTC'] as $source){
-	$resultJson = @file_get_contents($source['url'], false, $context);
-	if(!$resultJson) {
-		writeLog('Warning', 'BTC source '.$source['url'].' not available');
+//processing requests
+do {
+    curl_multi_exec($master,$running);
+} while($running > 0);
+
+//retrieving data 
+foreach($curlArr as $curlNode) {
+   $resultJson = curl_multi_getcontent($curlNode['data']);
+   if(!$resultJson) {
+		writeLog('Warning', $curlNode['type'].' source '.$curlNode['url'].' not available');
 	} else {
 		if(!is_string($resultJson)) {
-			writeLog('Warning', 'BTC source '.$source['url'].' bad response');
+			writeLog('Warning', $curlNode['type'].' source '.$source['url'].' bad response');
 		} else {
 			$result=json_decode($resultJson, true);
 			if(!json_last_error === JSON_ERROR_NONE) {
-				writeLog('Warning', 'BTC source '.$source['url'].' bad JSON format');
+				writeLog('Warning', $curlNode['type'].' source '.$source['url'].' bad JSON format');
 			} else {
 				//success
-				$rates['BTC'][] = jsonPath($result, $source['jsonPath'])[0];
+				$rates[$curlNode['type']][] = jsonPath($result, $curlNode['jsonPath'])[0];
 			}
 		}					
-	}  	
-};
+	}
+}
+
+//checking if BTC data is available
 $ratesCount['BTC'] = count($rates['BTC']);
 if($ratesCount['BTC'] == 0){
 	writeLog('Error', 'No BTC sources');
 	die('service not available');
 }
 
-//processing USD feeds
-foreach($urls['USD'] as $source){
-	$resultJson = @file_get_contents($source['url'], false, $context);
-	if(!$resultJson) {
-		writeLog('Warning', 'USD source '.$source['url'].' not available');
-	} else {
-		if(!is_string($resultJson)) {
-			writeLog('Warning', 'USD source '.$source['url'].' bad response');
-		} else {
-			$result=json_decode($resultJson, true);
-			if(!json_last_error === JSON_ERROR_NONE) {
-				writeLog('Warning', 'USD source '.$source['url'].' bad JSON format');
-			} else {
-				//success
-				$rates['USD'][] = jsonPath($result, $source['jsonPath'])[0];
-			}
-		}					
-	}  	
-};
+//checking if USD data is available
 $ratesCount['USD'] = count($rates['USD']);
 if($ratesCount['USD'] == 0){
 	writeLog('Error', 'No USD sources');
 	die('service not available');
 }
+
+//calculating
 $maxBTC = max($rates['BTC']);
 $minUSD = min($rates['USD']);
+
 //displaying results
 printf("BTC/USD: %.4f EUR/USD: %.4f BTC/EUR: %.4f", $maxBTC, $minUSD, $maxBTC/$minUSD);
 echo '<br>';// cli \n creates a new line in PHP, thus in HTML code, but not in HTML output
 printf("Active sources: BTC/USD (%d of %d)  BTC/EUR (%d of %d)", 
 	$ratesCount['BTC'], //successful BTC feeds responses
-	$urlsCount['BTC'], //total BTC feeds
+	$curlNodes['BTC'], //total BTC feeds
 	$ratesCount['USD'], //successful USD feeds responses`
-	$urlsCount['USD']	//total USD feeds
+	$curlNodes['USD']	//total USD feeds
 );
-
 ?>
